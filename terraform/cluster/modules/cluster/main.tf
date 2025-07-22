@@ -56,7 +56,7 @@ provider "aws" {
 module "eks" {
   #checkov:skip=CKV_TF_1:Module registry does not support commit hashes for versions
   source                         = "terraform-aws-modules/eks/aws"
-  version                        = "~> 19.20"
+  version                        = "~> 20.37.2"
   cluster_name                   = var.cluster_name
   cluster_version                = var.cluster_version  
   cluster_endpoint_public_access = true  
@@ -195,15 +195,22 @@ module "eks" {
 
   }
 
-  manage_aws_auth_configmap = true
-  aws_auth_roles = flatten([
-    module.eks_blueprints_admin_team.aws_auth_configmap_role,
-    var.admin_role_arn != "" ? [{
-      rolearn  = var.admin_role_arn
-      username = local.admin_role_name
-      groups   = ["system:masters"]
-    }] : []
-  ])
+ authentication_mode = "API_AND_CONFIG_MAP"
+  access_entries = {
+    # Bootstrap user (admin)
+    bootstrap = {
+      kubernetes_groups = ["system:masters"]
+      principal_arn    = var.admin_role_arn
+      username        = local.admin_role_name
+    }
+
+    # Add your blueprint admin team if needed
+    blueprint_admin = {
+      kubernetes_groups = module.eks_blueprints_admin_team.aws_auth_configmap_role.groups
+      principal_arn    = module.eks_blueprints_admin_team.aws_auth_configmap_role.rolearn
+      username        = module.eks_blueprints_admin_team.aws_auth_configmap_role.username
+    }
+  }
 
   tags = local.tags
 }
