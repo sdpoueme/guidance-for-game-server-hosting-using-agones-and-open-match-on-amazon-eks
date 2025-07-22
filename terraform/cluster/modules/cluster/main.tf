@@ -197,20 +197,14 @@ module "eks" {
 
  authentication_mode = "API_AND_CONFIG_MAP"
   access_entries = {
-    # Bootstrap user (admin)
-    bootstrap = {
-      kubernetes_groups = ["system:masters"]
-      principal_arn    = var.admin_role_arn
-      username        = local.admin_role_name
-    }
-
-    # Add your blueprint admin team if needed
+    # Only create blueprint_admin entry
     blueprint_admin = {
-      kubernetes_groups = module.eks_blueprints_admin_team.aws_auth_configmap_role.groups
+      kubernetes_groups = ["cluster-admin"]
       principal_arn    = module.eks_blueprints_admin_team.aws_auth_configmap_role.rolearn
-      username        = module.eks_blueprints_admin_team.aws_auth_configmap_role.username
+      username         = module.eks_blueprints_admin_team.aws_auth_configmap_role.username
     }
   }
+
 
   tags = local.tags
 }
